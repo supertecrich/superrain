@@ -13,32 +13,32 @@ const PURGE_INTERVAL = process.env.PURGE_INTERVAL || false
 console.info(`SUPERRAIN: Relay running on ${process.env.PORT}. PID: ${pid}. Purge Interval(seconds) ${PURGE_INTERVAL}. Waiting for connections...`)
 
 let connCount = 0
-let events = []
-let subs = new Map()
+//TODO this DB should be based on if we have a URI and DB set in the env file
+let db = new DB()
 
-// let lastPurge = Date.now()
-//
-// if (PURGE_INTERVAL) {
-//   console.log('Purging events every', PURGE_INTERVAL, 'seconds')
-//   setInterval(() => {
-//     lastPurge = Date.now()
-//     events = []
-//   }, PURGE_INTERVAL * 1000)
-// }
+ let lastPurge = Date.now()
+
+ if (PURGE_INTERVAL) {
+   console.log('Purging events every', PURGE_INTERVAL, 'seconds')
+   setInterval(async () => {
+     await db.purgeEvents()
+     lastPurge = Date.now()
+   }, PURGE_INTERVAL * 1000)
+ }
 
 wss.on('connection', socket => {
   connCount += 1
 
   console.log('Received connection', {pid, connCount})
 
-  const relay = new Relay(new DB(), socket)
+  const relay = new Relay(db, socket)
 
   if (PURGE_INTERVAL) {
     const now = Date.now()
     relay.send(['NOTICE', '', 'Next purge in ' + Math.round((PURGE_INTERVAL * 1000 - (now - lastPurge)) / 1000) + ' seconds'])
   }
 
-  socket.on('message', msg => relay.handle(msg))
+  socket.on('message', msg => relay.handleIncomingMessage(msg))
   socket.on('error', e => console.error("Received error on client socket", e))
   socket.on('close', () => {
     relay.cleanup()

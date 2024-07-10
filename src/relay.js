@@ -57,8 +57,9 @@ class Relay {
   onCLOSE(subId) {
     this.removeSub(subId)
   }
-  onREQ(subId, ...filters) {
+  async onREQ(subId, ...filters) {
     console.log('REQ', subId, ...filters)
+    let events = await this._db.getEvents()
 
     this.addSub(subId, filters)
 
@@ -76,8 +77,8 @@ class Relay {
 
     this.send(['EOSE', subId])
   }
-  onEVENT(event) {
-    this._db.addEvent(event)
+  async onEVENT(event) {
+    await this._db.addEvent(event)
 
     console.log('EVENT', event, true)
 
