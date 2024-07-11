@@ -40,6 +40,7 @@ class Relay {
     let verb, payload
     try {
       [verb, ...payload] = message
+      console.info(`Verb Found: ${verb}`)
     } catch (e) {
       console.error('An error occurred processing parsed message', e, message)
       this.send(['NOTICE', '', 'Unable to read message'])
@@ -58,35 +59,35 @@ class Relay {
     this.removeSub(subId)
   }
   async onREQ(subId, ...filters) {
-    console.log('REQ', subId, ...filters)
+    console.info('REQ', subId, ...filters)
     let events = await this._db.getEvents()
 
     this.addSub(subId, filters)
 
     for (const event of events) {
       if (matchFilters(filters, event)) {
-        console.log('match', subId, event)
+        console.info('match', subId, event)
 
         this.send(['EVENT', subId, event])
       } else {
-        console.log('miss', subId, event)
+        console.info('miss', subId, event)
       }
     }
 
-    console.log('EOSE')
+    console.info('EOSE')
 
     this.send(['EOSE', subId])
   }
   async onEVENT(event) {
     await this._db.addEvent(event)
 
-    console.log('EVENT', event, true)
+    console.info('EVENT', event, true)
 
     this.send(['OK', event.id, true])
 
-    for (const [subId, {instance, filters}] of subs.entries()) {
+    for (const [subId, {instance, filters}] of this._subs.entries()) {
       if (matchFilters(filters, event)) {
-        console.log('match', subId, event)
+        console.info('match', subId, event)
 
         instance.send(['EVENT', subId, event])
       }
