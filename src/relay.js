@@ -2,33 +2,36 @@ const {matchFilters} = require('nostr-tools')
 const console = require('./logger.js')
 
 class Relay {
-  constructor(db, socket) {
+  constructor(db, globalSubscriptions, socket) {
     this._socket = socket
-    this._subs = new Set()
+    this._allSubscriptions = globalSubscriptions
+    this._mySubscriptions = new Set()
     this._db = db
   }
-  cleanup() {
-    // used for on close
-    this._socket.close()
 
-    for (const subId of this._subs) {
+  cleanup() {
+    for (const subId of this._mySubscriptions) {
       this.removeSub(subId)
     }
+    this._socket.close()
   }
+
   addSub(subId, filters) {
-    this._subs.set(subId, {instance: this, filters})
-    console.debug(`New subscriber added(ID:${subId}): ${filters}`)
+    this._allSubscriptions.addNewSubscription(subId, {instance: this, filters})
+    this._mySubscriptions.add(subId)
+    console.info(`New subscriber added(ID:${subId})`)
   }
+
   removeSub(subId) {
-    console.debug(`Removing subscriber ${subId} - ${this._subs[subId].filters}}`)
-    this._subs.delete(subId)
+    console.info(`Removing subscriber ${subId}`)
+    this._allSubscriptions.removeSubscription(subId)
+    this._mySubscriptions.delete(subId)
   }
-  getSubs() {
-    return this._subs
-  }
+
   send(message) {
     this._socket.send(JSON.stringify(message))
   }
+
   handleIncomingMessage(message) {
     try {
       message = JSON.parse(message)
@@ -40,7 +43,7 @@ class Relay {
     let verb, payload
     try {
       [verb, ...payload] = message
-      console.info(`Verb Found: ${verb}`)
+      console.info(`Verb Sent: ${verb}`)
     } catch (e) {
       console.error('An error occurred processing parsed message', e, message)
       this.send(['NOTICE', '', 'Unable to read message'])
@@ -55,9 +58,11 @@ class Relay {
       this.send(['NOTICE', '', 'Unable to handle message'])
     }
   }
+
   onCLOSE(subId) {
     this.removeSub(subId)
   }
+
   async onREQ(subId, ...filters) {
     console.info('REQ', subId, ...filters)
     let events = await this._db.getEvents()
@@ -78,17 +83,17 @@ class Relay {
 
     this.send(['EOSE', subId])
   }
-  async onEVENT(event) {
-    await this._db.addEvent(event)
 
+  async onEVENT(event) {
     console.info('EVENT', event, true)
 
+    await this._db.addEvent(event)
     this.send(['OK', event.id, true])
 
-    for (const [subId, {instance, filters}] of this._subs.entries()) {
+    for (const [subId, {instance, filters}] of this._allSubscriptions.getSubscriptions()) {
+      console.info(subId, filters)
       if (matchFilters(filters, event)) {
-        console.info('match', subId, event)
-
+        console.log('match', subId, event)
         instance.send(['EVENT', subId, event])
       }
     }

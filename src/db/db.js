@@ -43,6 +43,7 @@ class InternalDB {
     // this.client = new MongoClient(DB_URI, {serverApi: ServerApiVersion.v1})
     // this.client.connect()
     // this.db = this.client.db(DB)
+    console.info('db constructor called.')
     this._eventsDB = []
   }
 
@@ -55,6 +56,10 @@ class InternalDB {
   }
 
   async getEvents() {
+    return this._eventsDB
+  }
+
+  getCachedEvents() {
     return this._eventsDB
   }
 }

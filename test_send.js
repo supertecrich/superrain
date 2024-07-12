@@ -26,10 +26,16 @@ async function sendMessage(message) {
     }
     let eventFinal = `["EVENT",${JSON.stringify(finalizeEvent(event, skDecoded))}]`
     
-    console.log('eventFinal:', event)
+//    console.log('eventFinal:', event)
     try {
       ws.on('open', function open() {
         ws.send(eventFinal)
+      })
+      ws.on('message', (msg) => {
+          console.log(JSON.parse(msg))
+          let [verb, ...payload] = JSON.parse(msg)
+          if (verb === 'OK')
+            ws.close()
       })
     } catch (e) {
         console.error('Failed to publish to any relay:', e)

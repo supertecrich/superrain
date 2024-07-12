@@ -1,5 +1,6 @@
 const console = require('./src/logger')
 const Relay = require('./src/relay')
+const Subscription = require('./src/subscription')
 const dotenv = require('dotenv')
 const {matchFilters} = require('nostr-tools')
 const {WebSocketServer} = require('ws')
@@ -12,26 +13,30 @@ const PURGE_INTERVAL = process.env.PURGE_INTERVAL || false
 
 console.info(`SUPERRAIN: Relay running on ${process.env.PORT}. PID: ${pid}. Purge Interval(seconds) ${PURGE_INTERVAL}. Waiting for connections...`)
 
+//**** GLOBAL STORES ****
 let connCount = 0
 //TODO this DB should be based on if we have a URI and DB set in the env file
 let db = new DB()
+let subscriptions = new Subscription()
+let lastPurge = Date.now()
 
- let lastPurge = Date.now()
+if (PURGE_INTERVAL) {
+  console.log('Purging events every', PURGE_INTERVAL, 'seconds')
+  setInterval(async () => {
+    await db.purgeEvents()
+    lastPurge = Date.now()
+  }, PURGE_INTERVAL * 1000)
+}
 
- if (PURGE_INTERVAL) {
-   console.log('Purging events every', PURGE_INTERVAL, 'seconds')
-   setInterval(async () => {
-     await db.purgeEvents()
-     lastPurge = Date.now()
-   }, PURGE_INTERVAL * 1000)
- }
 
+// For every connection - give it the global stores and setup a relay instance which will manage that connections I/O
 wss.on('connection', socket => {
   connCount += 1
 
-  console.log('Received connection', {pid, connCount})
+  console.info('Received connection', {pid, connCount})
+  console.info(`DB has: ${JSON.stringify(db.getCachedEvents(), null, 2)}`)
 
-  const relay = new Relay(db, socket)
+  const relay = new Relay(db, subscriptions, socket)
 
   if (PURGE_INTERVAL) {
     const now = Date.now()
@@ -41,10 +46,8 @@ wss.on('connection', socket => {
   socket.on('message', msg => relay.handleIncomingMessage(msg))
   socket.on('error', e => console.error("Received error on client socket", e))
   socket.on('close', () => {
-    relay.cleanup()
-
+    console.info('Closing connection', {pid, connCount})
     connCount -= 1
-
-    console.log('Closing connection', {pid, connCount})
+    relay.cleanup()
   })
 })
