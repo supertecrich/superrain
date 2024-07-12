@@ -16,8 +16,12 @@ SuperRain is a high performance NOSTR relay with a focus on simplicity and DVM (
     * `MONGODB_URI` - The host of the database
     * `MONGODB_DB` - The name of the database 
     * NOTE: If db is not provided - the app will use an in memory set
-3. Run `npm install`
+3. Run `yarn install`
 3. Run `npm start`
+
+## Alternative way to run this - in a docker container
+1. Build the container locally: `docker build -f Dockerfile -t superrain .`
+2. Run the container locally: `docker run -p 80:80 superrain`
 
 ## NIPS Supported
 #### Feel free to open a PR if you wish to add support for a NIP - we prioritize NIPS we need internally first.
