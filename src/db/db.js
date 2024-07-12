@@ -43,7 +43,6 @@ class InternalDB {
     // this.client = new MongoClient(DB_URI, {serverApi: ServerApiVersion.v1})
     // this.client.connect()
     // this.db = this.client.db(DB)
-    console.info('db constructor called.')
     this._eventsDB = []
   }
 
