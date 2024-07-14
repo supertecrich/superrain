@@ -14,7 +14,9 @@
   "dependencies": {
     "@nostr-dev-kit/ndk": "^2.8.2",
     "bech32": "^2.0.0",
+    "bufferutil": "^4.0.8",
     "dotenv": "^16.4.5",
+    "ksuid": "^3.0.0",
     "loglevel": "^1.9.1",
     "mongodb": "^6.8.0",
     "mongoose": "^8.4.4",

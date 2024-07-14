@@ -1,35 +1,45 @@
+require('dotenv').config()
 const console = require('./src/logger')
+const {WebSocketServer} = require("ws")
 const Relay = require('./src/relay')
 const Subscription = require('./src/subscription')
-const dotenv = require('dotenv')
-const {DB} = require('./src/db/db')
-dotenv.config()
+const {DB, MongoDB} = require('./src/db/db')
 
 
 //**** GLOBAL STORES ****
 const PURGE_INTERVAL = process.env.PURGE_INTERVAL || false
 let connCount = 0
-//TODO this DB should be based on if we have a URI and DB set in the env file
-let db = new DB()
 let subscriptions = new Subscription()
 let lastPurge = Date.now()
-
-console.info(`SUPERRAIN: Relay running on ${process.env.PORT}. Purge Interval(seconds) ${PURGE_INTERVAL}. Waiting for connections...`)
-
-if (PURGE_INTERVAL) {
-  console.log('Purging events every', PURGE_INTERVAL, 'seconds')
-  setInterval(async () => {
-    await db.purgeEvents()
-    lastPurge = Date.now()
-  }, PURGE_INTERVAL * 1000)
-}
+let purgeInterval = null
 
 // For every connection - give it the global stores and setup a relay instance which will manage that connections I/O
-function SocketServer(socket) {
+async function SocketServer(socket) {
   connCount += 1
+  let db = null
+  try {
+    if (process.env.MONGODB_URI && process.env.MONGODB_DB) {
+      console.info('Using mongoDB to store events.')
+      db = await MongoDB.init()
+    } else {
+      console.info('Using in memory event store - Having a purge interval is highly reccommended.')
+      db = await DB.init()
+    }
+  } catch (e) {
+    console.error(`Error occurred setting up db: ${e}`)
+  }
+
+  if (PURGE_INTERVAL && db) {
+    console.info('Purging events every', PURGE_INTERVAL, 'seconds')
+    purgeInterval = setInterval(async () => {
+      console.info('Events Purged')
+      await db.purgeEvents()
+      lastPurge = Date.now()
+    }, PURGE_INTERVAL * 1000)
+  }
 
   console.info('Received connection', {connCount})
-  console.info(`DB has: ${JSON.stringify(db.getCachedEvents(), null, 2)}`)
+  //  console.info(`DB has: ${JSON.stringify(db.getCachedEvents(), null, 2)}`)
 
   const relay = new Relay(db, subscriptions, socket)
 
@@ -38,13 +48,43 @@ function SocketServer(socket) {
     relay.send(['NOTICE', '', 'Next purge in ' + Math.round((PURGE_INTERVAL * 1000 - (now - lastPurge)) / 1000) + ' seconds'])
   }
 
+  socket.on('pong', () => {
+    this.isAlive = true
+  })
+  socket.isAlive = true
   socket.on('message', msg => relay.handleIncomingMessage(msg))
-  //  socket.on('error', e => console.error("Received error on client socket", e))
+  socket.on('error', e => console.error("Received error on client socket", e))
   socket.on('close', () => {
-    console.info('Closing connection', {pid, connCount})
+    console.info('Closing connection', {connCount})
     connCount -= 1
     relay.cleanup()
   })
 }
 
-module.exports = SocketServer
+function Server(httpServer) {
+
+  let server = new WebSocketServer({ server: httpServer })
+  let unresponsiveTimeout = process.env.CLOSE_UNRESPONSIVE_CLIENTS_INTERVAL * 1000 || 30000
+  server.on('connection', SocketServer)
+  server.on('close', () => {
+    console.info('Closing down the web socket server.')
+    if (PURGE_INTERVAL || purgeInterval) {
+      clearInterval(purgeInterval)
+    }
+    clearInterval(closeUnresponsiveConns)
+  })
+
+  const closeUnresponsiveConns = setInterval(function ping() {
+    server.clients.forEach(function each(ws) {
+      if (ws.isAlive === false) return ws.terminate()
+
+      ws.isAlive = false
+      ws.ping()
+    })
+  }, unresponsiveTimeout)
+
+  console.info(`CONFIG - ENV: ${process.env.NODE_ENV}, Purge Interval(seconds) ${PURGE_INTERVAL}, Unresponsive Check(seconds): ${unresponsiveTimeout / 1000}`)
+  return server
+}
+
+module.exports = Server
