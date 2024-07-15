@@ -1,5 +1,19 @@
 const {matchFilters} = require('nostr-tools')
 const console = require('./logger.js')
+const fs = require('fs')
+
+//TODO refactor this to not have it here -- but for now we want it loaded once at the top level.
+const KIND_ALLOWED = process.env.KIND_ALLOWED && process.env.KIND_ALLOWED.toLowerCase() === 'true'
+let KINDS_ALLOWED = []
+if (KIND_ALLOWED) {
+  try {
+    KINDS_ALLOWED = JSON.parse(fs.readFileSync('kinds_allowed.json', 'utf8'))
+    console.info('Kinds allowed turned on. Only allowing kinds in kinds_allowed.json')
+  } catch (e) {
+    console.error('Failed to load kinds allowed when kind_allowed set to true')
+    throw e
+  }
+}
 
 class Relay {
   constructor(db, globalSubscriptions, socket) {
@@ -35,9 +49,20 @@ class Relay {
   handleIncomingMessage(message) {
     try {
       message = JSON.parse(message)
+//      if (KIND_ALLOWED) {
+//        let note = message[1]
+//        let noteKind = note.kind
+//        console.log(note)
+//        if (!KINDS_ALLOWED.includes(noteKind)) {
+//          console.debug(`Kind sent that isn't allowed: ${noteKind}`)
+//          this.send(['NOTICE', '', 'Kind not allowed.'])
+//          return false
+//        }
+//      }
     } catch (e) {
       console.error('An error occurred parsing incoming websocket message', e)
-      this.send(['NOTICE', '', 'Unable to parse message'])
+      this.send(['NOTICE', '', 'Unable to parse message.'])
+      return false
     }
 
     let verb, payload
@@ -47,6 +72,7 @@ class Relay {
     } catch (e) {
       console.error('An error occurred processing parsed message', e, message)
       this.send(['NOTICE', '', 'Unable to read message'])
+      return false
     }
 
     const verbHandler = this[`on${verb}`]
@@ -56,6 +82,7 @@ class Relay {
     } else {
       console.error(`No verb handler for that message type.`)
       this.send(['NOTICE', '', 'Unable to handle message'])
+      return false
     }
   }
 
@@ -64,24 +91,27 @@ class Relay {
   }
 
   async onREQ(subId, ...filters) {
-    console.info('REQ', subId, ...filters)
-    let events = await this._db.getEvents()
+    try {
+      console.info('REQ', subId, ...filters)
+      let events = await this._db.getEvents()
 
-    this.addSub(subId, filters)
+      this.addSub(subId, filters)
 
-    for (const event of events) {
-      if (matchFilters(filters, event)) {
-        console.info('match', subId, event)
+      for (const event of events) {
+        if (matchFilters(filters, event)) {
+          console.debug('match', subId, event)
 
-        this.send(['EVENT', subId, event])
-      } else {
-        console.info('miss', subId, event)
+          this.send(['EVENT', subId, event])
+        } else {
+          console.debug('miss', subId, event)
+        }
       }
+      console.info('EOSE')
+      this.send(['EOSE', subId])
+    } catch (e) {
+      console.error('An error occurred in REQ.', e)
+      this.send(['CLOSED', '', 'Unable to request notes'])
     }
-
-    console.info('EOSE')
-
-    this.send(['EOSE', subId])
   }
 
   async onEVENT(event) {
