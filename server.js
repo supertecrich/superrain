@@ -5,6 +5,12 @@ const Relay = require('./src/relay')
 const Subscription = require('./src/subscription')
 const {DB, MongoDB} = require('./src/db/db')
 
+const USE_BLACKLIST = process.env.NPUB_BLACKLIST && process.env.NPUB_BLACKLIST.toLowerCase() === 'true'
+const USE_WHITELIST = process.env.NPUB_WHITELIST && process.env.NPUB_WHITELIST.toLowerCase() === 'true'
+
+if (USE_BLACKLIST && USE_WHITELIST) {
+  throw new Error('Cannot use a whitelist and blacklist together. Pick one.')
+}
 
 //**** GLOBAL STORES ****
 const PURGE_INTERVAL = process.env.PURGE_INTERVAL || false
@@ -19,11 +25,11 @@ async function SocketServer(socket) {
   let db = null
   try {
     if (process.env.MONGODB_URI && process.env.MONGODB_DB) {
-      console.info('Using mongoDB to store events.')
       db = await MongoDB.init()
+      console.info('Using mongoDB to store events.')
     } else {
-      console.info('Using in memory event store - Having a purge interval is highly reccommended.')
       db = await DB.init()
+      console.info('Using in memory event store - Having a purge interval is highly reccommended.')
     }
   } catch (e) {
     console.error(`Error occurred setting up db: ${e}`)
