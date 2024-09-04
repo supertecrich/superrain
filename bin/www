@@ -10,97 +10,100 @@ let throng = require('throng')
 let superrainServer = require('../server')
 
 if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
-  throng({
-    workers: 2,
-    lifetime: Infinity,
-    master: function () {
-      console.log('Production Server Started.')
-    },
-    start: startServer
-  })
+    throng({
+        workers: 2,
+        lifetime: Infinity,
+        master: function () {
+            console.log('Production Server Started.')
+        },
+        start: startServer
+    })
 } else {
-  console.log('Starting server in debug mode...no cluster')
-  startServer()
+    console.log('Starting server in debug mode...no cluster')
+    startServer()
 }
 
 function startServer() {
-  /**
-   * Get port from environment and store in Express.
-   */
-  let port = normalizePort(process.env.PORT || '8080')
-  
-  /**
-   * Create HTTP server wrapped around the websocket server
-   */
-  let server = http.createServer()
-  superrainServer(server)
+    /**
+     * Get port from environment and store in Express.
+     */
+    let port = normalizePort(process.env.PORT || '8080')
 
-  /**
-   * Listen on provided port, on all network interfaces.
-   */
+    /**
+     * Create HTTP server wrapped around the websocket server
+     */
+    let server = http.createServer()
+    // This is where the magic happens that allows everthing else downstream to be async
+    superrainServer(server).then(() => {
+        console.log('SuperRain NOSTR Relay server started.')
+        /**
+         * Listen on provided port, on all network interfaces.
+         */
 
-  server.listen(port)
-  server.on('error', onError)
-  server.on('listening', onListening)
+        server.listen(port)
+        server.on('error', onError)
+        server.on('listening', onListening)
+    }).catch((err) => onError(err))
 
-  /**
-   * Normalize a port into a number, string, or false.
-   */
 
-  function normalizePort(val) {
-    let port = parseInt(val, 10)
+    /**
+     * Normalize a port into a number, string, or false.
+     */
 
-    if (isNaN(port)) {
-      // named pipe
-      return val
+    function normalizePort(val) {
+        let port = parseInt(val, 10)
+
+        if (isNaN(port)) {
+            // named pipe
+            return val
+        }
+
+        if (port >= 0) {
+            // port number
+            return port
+        }
+
+        return false
     }
 
-    if (port >= 0) {
-      // port number
-      return port
+    /**
+     * Event listener for HTTP server "error" event.
+     */
+
+    function onError(error) {
+        if (error.syscall !== 'listen') {
+            throw error
+        }
+
+        let bind = typeof port === 'string'
+            ? 'Pipe ' + port
+            : 'Port ' + port
+
+        // handle specific listen errors with friendly messages
+        switch (error.code) {
+            case 'EACCES':
+                console.error(bind + ' requires elevated privileges')
+                process.exit(1)
+                break
+            case 'EADDRINUSE':
+                console.error(bind + ' is already in use')
+                process.exit(1)
+                break
+            default:
+                throw error
+        }
     }
 
-    return false
-  }
+    /**
+     * Event listener for HTTP server "listening" event.
+     */
 
-  /**
-   * Event listener for HTTP server "error" event.
-   */
+    function onListening() {
+        let addr = server.address()
+        let bind = typeof addr === 'string'
+            ? 'pipe ' + addr
+            : 'port ' + addr.port
 
-  function onError(error) {
-    if (error.syscall !== 'listen') {
-      throw error
+        console.log('SuperRain NOSTR Relay listening on ' + bind + ' 🚀')
     }
-
-    let bind = typeof port === 'string'
-      ? 'Pipe ' + port
-      : 'Port ' + port
-
-    // handle specific listen errors with friendly messages
-    switch (error.code) {
-      case 'EACCES':
-        console.error(bind + ' requires elevated privileges')
-        process.exit(1)
-        break
-      case 'EADDRINUSE':
-        console.error(bind + ' is already in use')
-        process.exit(1)
-        break
-      default:
-        throw error
-    }
-  }
-
-  /**
-   * Event listener for HTTP server "listening" event.
-   */
-
-  function onListening() {
-    let addr = server.address()
-    let bind = typeof addr === 'string'
-      ? 'pipe ' + addr
-  	: 'port ' + addr.port
-
-    console.log('SuperRain NOSTR Relay listening on ' + bind + ' 🚀')
-  }
 }

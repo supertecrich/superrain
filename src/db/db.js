@@ -1,7 +1,9 @@
 const {MongoClient, ServerApiVersion} = require('mongodb')
 const console = require('../logger')
-const {connect} = require('mongoose')
+const {mongoose} = require('mongoose')
 const {Events} = require('./eventModel')
+
+mongoose.set('bufferCommands', false)
 
 const DB_URI = process.env.MONGODB_URI
 const DB = process.env.MONGODB_DB
@@ -12,13 +14,13 @@ let _eventsDB = []
  async function mongooseDB() {
    try {
      if (!gooseConnection) {
-       console.debug('Not connected to the DB. Reconnecting to: ', DB)
-       gooseConnection = await connect(DB_URI, {dbName: DB, serverApi: ServerApiVersion.v1})
+       console.info('Not connected to the DB. Connecting to: ', DB)
+       gooseConnection = await mongoose.connect(DB_URI, {dbName: DB, serverApi: ServerApiVersion.v1})
        gooseConnection.connection.on('error', err => {
          console.error(err)
        })
-       console.debug('Connected to the DB: ', DB)
      }
+     console.info('Connected to the DB: ', DB)
      return gooseConnection
    } catch (error) {
      console.error(error)
@@ -83,6 +85,8 @@ class InternalDB {
   }
 
   static async init() {
+    // fake async call using sleep - making sure internal and external inits work the same
+    await new Promise(resolve => setTimeout(resolve, 600))
     return new InternalDB()
   }
 
