@@ -33,13 +33,15 @@ async function setupDB() {
             db = await DB.init()
             console.info('Using in memory event store - Having a purge interval is highly reccommended.')
         }
-        if (PURGE_INTERVAL && db) {
+        if (PURGE_INTERVAL && db && parseInt(PURGE_INTERVAL) > 0) {
             console.info('Purging events every', PURGE_INTERVAL, 'seconds')
             purgeInterval = setInterval(async () => {
                 await db.purgeEvents()
                 console.info('Events Purged')
                 lastPurge = Date.now()
             }, PURGE_INTERVAL * 1000)
+        } else {
+            console.info('No purge interval integer set. Events will not be purged.')
         }
         return db
     } catch (e) {

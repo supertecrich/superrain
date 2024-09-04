@@ -3,7 +3,7 @@ const console = require('../logger')
 const {mongoose} = require('mongoose')
 const {Events} = require('./eventModel')
 
-mongoose.set('bufferCommands', false)
+// mongoose.set('bufferCommands', false)
 
 const DB_URI = process.env.MONGODB_URI
 const DB = process.env.MONGODB_DB
