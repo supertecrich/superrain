@@ -36,8 +36,9 @@ async function setupDB() {
         if (PURGE_INTERVAL && db && parseInt(PURGE_INTERVAL) > 0) {
             console.warn('Purging events every', PURGE_INTERVAL, 'seconds')
             purgeInterval = setInterval(async () => {
+                let eventCount = await db.countEvents()
                 await db.purgeEvents()
-                console.warn('Events Purged')
+                console.warn(`${eventCount} events purged`)
                 lastPurge = Date.now()
             }, PURGE_INTERVAL * 1000)
         } else {
