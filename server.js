@@ -53,7 +53,7 @@ async function setupDB() {
 async function SocketServer(socket) {
     connCount += 1
 
-    console.info('Received connection', {connCount})
+    console.warn('Received connection:', {connCount})
     //  console.info(`DB has: ${JSON.stringify(db.getCachedEvents(), null, 2)}`)
 
     const relay = new Relay(db, subscriptions, socket)
@@ -71,7 +71,7 @@ async function SocketServer(socket) {
     socket.on('message', msg => relay.handleIncomingMessage(msg))
     socket.on('error', e => console.error("Received error on client socket", e))
     socket.on('close', () => {
-        console.info('Closing connection', {connCount})
+        console.warn('Closing connection', {connCount})
         connCount -= 1
         relay.cleanup()
     })
