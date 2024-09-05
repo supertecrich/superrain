@@ -58,9 +58,10 @@ async function SocketServer(socket) {
 
     const relay = new Relay(db, subscriptions, socket)
 
-    if (PURGE_INTERVAL) {
+    if (PURGE_INTERVAL && purgeInterval && parseInt(PURGE_INTERVAL) > 0) {
         const now = Date.now()
-        relay.send(['NOTICE', '', 'Next purge in ' + Math.round((PURGE_INTERVAL * 1000 - (now - lastPurge)) / 1000) + ' seconds'])
+        const nextIn = Math.round((PURGE_INTERVAL * 1000 - (now - lastPurge)) / 1000)
+        relay.send(['NOTICE', '', 'Next purge in ' + nextIn + ' seconds'])
     }
 
     socket.on('pong', () => {
