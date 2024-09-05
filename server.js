@@ -72,8 +72,8 @@ async function SocketServer(socket) {
     socket.on('message', msg => relay.handleIncomingMessage(msg))
     socket.on('error', e => console.error("Received error on client socket", e))
     socket.on('close', () => {
-        console.warn('Closing connection', {connCount})
         connCount -= 1
+        console.warn('Closing connection', {connCount})
         relay.cleanup()
     })
 }
