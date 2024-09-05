@@ -28,20 +28,20 @@ async function setupDB() {
         }
         if (process.env.MONGODB_URI && process.env.MONGODB_DB) {
             db = await MongoDB.init()
-            console.info('Using mongoDB to store events.')
+            console.warn('Using mongoDB to store events.')
         } else {
             db = await DB.init()
-            console.info('Using in memory event store - Having a purge interval is highly reccommended.')
+            console.warn('Using in memory event store - Having a purge interval is highly reccommended.')
         }
         if (PURGE_INTERVAL && db && parseInt(PURGE_INTERVAL) > 0) {
-            console.info('Purging events every', PURGE_INTERVAL, 'seconds')
+            console.warn('Purging events every', PURGE_INTERVAL, 'seconds')
             purgeInterval = setInterval(async () => {
                 await db.purgeEvents()
-                console.info('Events Purged')
+                console.warn('Events Purged')
                 lastPurge = Date.now()
             }, PURGE_INTERVAL * 1000)
         } else {
-            console.info('No purge interval integer set. Events will not be purged.')
+            console.warn('No purge interval integer set. Events will not be purged.')
         }
         return db
     } catch (e) {
@@ -99,11 +99,11 @@ async function Server(httpServer) {
         })
     }, unresponsiveTimeout)
 
-    console.info(`CONFIG - ENV: ${process.env.NODE_ENV}, Purge Interval(seconds) ${PURGE_INTERVAL}, Unresponsive Check(seconds): ${unresponsiveTimeout / 1000}`)
+    console.warn(`CONFIG - ENV: ${process.env.NODE_ENV}, Purge Interval(seconds) ${PURGE_INTERVAL}, Unresponsive Check(seconds): ${unresponsiveTimeout / 1000}`)
     if (process.env.MONGODB_URI && process.env.MONGODB_DB) {
-        console.info('CONFIG - MONGODB_URI env var found. Using mongoDB to store events.')
+        console.warn('CONFIG - MONGODB_URI env var found. Using mongoDB to store events.')
     } else {
-        console.info('CONFIG - No MONGODB_URI env var found. Using in memory event store.')
+        console.warn('CONFIG - No MONGODB_URI env var found. Using in memory event store.')
     }
     return server
 }
