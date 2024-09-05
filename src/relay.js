@@ -49,16 +49,16 @@ class Relay {
   handleIncomingMessage(message) {
     try {
       message = JSON.parse(message)
-//      if (KIND_ALLOWED) {
-//        let note = message[1]
-//        let noteKind = note.kind
-//        console.log(note)
-//        if (!KINDS_ALLOWED.includes(noteKind)) {
-//          console.debug(`Kind sent that isn't allowed: ${noteKind}`)
-//          this.send(['NOTICE', '', 'Kind not allowed.'])
-//          return false
-//        }
-//      }
+     if (KIND_ALLOWED) {
+       let note = message[1]
+       let noteKind = note.kind
+       if (!KINDS_ALLOWED.includes(noteKind)) {
+         console.debug(`Kind sent that isn't allowed: ${noteKind}`)
+         this.send(['NOTICE', '', 'Kind not allowed.'])
+         this.send(['OK', note.id, false])
+         return false
+       }
+     }
     } catch (e) {
       console.error('An error occurred parsing incoming websocket message', e)
       this.send(['NOTICE', '', 'Unable to parse message.'])
