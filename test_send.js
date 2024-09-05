@@ -18,7 +18,7 @@ async function sendMessage(message) {
     let skDecoded = bech32Decoder('nsec', process.env.NOSTR_SK)
     let pk = getPublicKey(skDecoded)
     let event = {
-        kind: 1,
+        kind: 5050,
         pubkey: pk,
         created_at: Math.floor(Date.now() / 1000),
         tags: [],
