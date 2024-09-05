@@ -26,7 +26,9 @@ SuperRain is a high performance NOSTR relay with a focus on simplicity and DVM (
      * NOTE: You may not use the blacklist and the whitelist at the same time. An error will be thrown if you set both of these to true.
    * `KIND_ALLOWED` - Set to true to use the array of NIPs allowed in `kind_allowed.json` If a kind is sent that is not in this list the relay will not process it, save it, or relay it. It will issue a error in response.
 3. Run `yarn install`
-3. Run `npm start`
+3. Run `npm start` runs the basic node server
+4. Run `npm run debug` runs the server with nodemon for development
+5. Run `npm run production` runs the server with pm2 for production
 
 ## Alternative way to run this - in a docker container
 1. Build the container locally: `docker build -f Dockerfile -t superrain .`
