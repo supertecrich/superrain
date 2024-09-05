@@ -16,7 +16,7 @@ SuperRain is a high performance NOSTR relay with a focus on simplicity and DVM (
 2. Set the following Env variables in either a .env file in the root directory or on the path
     * `PORT` - The port to run the server on
     * `NODE_ENV` - The environment to run the server in. We reccommend keeping this on production unless you are doing development work on the server.
-    * `PURGE_INTERVAL` - The interval to purge old notes. Leave this blank if you wish to keep notes forever. (defaults if unset to off)
+    * `PURGE_INTERVAL` - The interval to purge old notes. Set this to false if you wish to keep notes forever. (defaults if unset to off)
     * `MONGODB_URI` - The host of the database (required for mongoDB persistance) - Leave this blank to have superrain use an in memory store for notes.
     * `MONGODB_DB` - The name of the database (required for mongoDB persistance) - Leave this blank to have superrain use an in memory store for notes.
        * NOTE: If db is not provided - the app will use an in memory set, in which case you should ensure you have sufficient memory on the server. We highly reccommend you set a `PURGE_INTERVAL`
