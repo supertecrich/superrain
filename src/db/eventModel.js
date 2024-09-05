@@ -1,5 +1,5 @@
 const console = require('../logger')
-const {tsUUID} = require('../utilites')
+const {tsUUID} = require('../utilities')
 
 let compiledEventModel
 async function eventModel(db) {
