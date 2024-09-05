@@ -40,4 +40,4 @@ SuperRain is a high performance NOSTR relay with a focus on simplicity and DVM (
 * NIP-90 (coming soon)
 
 #### Credits
-Thanks to https://github.com/coracle-social/bucket/tree/master for the original websocket implementation
+Thanks to https://github.com/coracle-social/bucket/tree/master for the original websocket implementation ideas
