@@ -1,3 +1,5 @@
+#! /opt/homebrew/bin/node
+
 const dotenv = require('dotenv')
 const {getPublicKey, finalizeEvent} = require("nostr-tools")
 const {bech32} = require("bech32")
@@ -18,7 +20,7 @@ async function sendMessage(message) {
     let skDecoded = bech32Decoder('nsec', process.env.NOSTR_SK)
     let pk = getPublicKey(skDecoded)
     let event = {
-        kind: 5050,
+        kind: 1,
         pubkey: pk,
         created_at: Math.floor(Date.now() / 1000),
         tags: [],
