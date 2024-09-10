@@ -14,12 +14,12 @@ if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging')
         workers: 2,
         lifetime: Infinity,
         master: function () {
-            console.log('Production Server Started.')
+            console.warn('Production Server Started.')
         },
         start: startServer
     })
 } else {
-    console.log('Starting server in debug mode...no cluster')
+    console.warn('Starting server in debug mode...no cluster')
     startServer()
 }
 
@@ -35,7 +35,6 @@ function startServer() {
     let server = http.createServer()
     // This is where the magic happens that allows everthing else downstream to be async
     superrainServer(server).then(() => {
-        console.log('SuperRain NOSTR Relay server started.')
         /**
          * Listen on provided port, on all network interfaces.
          */
@@ -104,6 +103,6 @@ function startServer() {
             ? 'pipe ' + addr
             : 'port ' + addr.port
 
-        console.log('SuperRain NOSTR Relay listening at ' + addr.address + ' and ' + bind + ' 🚀')
+        console.warn('SuperRain NOSTR Relay listening at ' + bind + ' 🚀')
     }
 }

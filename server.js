@@ -13,7 +13,7 @@ if (USE_BLACKLIST && USE_WHITELIST) {
 }
 
 //**** GLOBAL STORES ****
-const PURGE_INTERVAL = process.env.PURGE_INTERVAL || false
+const PURGE_INTERVAL = process.env.PURGE_INTERVAL && parseInt(process.env.PURGE_INTERVAL) || 0
 let connCount = 0
 let subscriptions = new Subscription()
 let lastPurge = Date.now()
@@ -33,7 +33,7 @@ async function setupDB() {
             db = await DB.init()
             console.warn('Using in memory event store - Having a purge interval is highly reccommended.')
         }
-        if (PURGE_INTERVAL && db && parseInt(PURGE_INTERVAL) > 0) {
+        if (PURGE_INTERVAL && parseInt(PURGE_INTERVAL) > 0) {
             console.warn('Purging events every', PURGE_INTERVAL, 'seconds')
             purgeInterval = setInterval(async () => {
                 let eventCount = await db.countEvents()
@@ -54,26 +54,22 @@ async function setupDB() {
 async function SocketServer(socket) {
     connCount += 1
 
-    console.warn('Received connection:', {connCount})
+    console.info('Received connection:', {connCount})
     //  console.info(`DB has: ${JSON.stringify(db.getCachedEvents(), null, 2)}`)
 
     const relay = new Relay(db, subscriptions, socket)
 
-    if (PURGE_INTERVAL && purgeInterval && parseInt(PURGE_INTERVAL) > 0) {
+    if (PURGE_INTERVAL && PURGE_INTERVAL > 0) {
         const now = Date.now()
         const nextIn = Math.round((PURGE_INTERVAL * 1000 - (now - lastPurge)) / 1000)
         relay.send(['NOTICE', '', 'Next purge in ' + nextIn + ' seconds'])
     }
 
-    socket.on('pong', () => {
-        this.isAlive = true
-    })
-    socket.isAlive = true
     socket.on('message', msg => relay.handleIncomingMessage(msg))
     socket.on('error', e => console.error("Received error on client socket", e))
     socket.on('close', () => {
         connCount -= 1
-        console.warn('Closing connection', {connCount})
+        console.info('Closing connection', {connCount})
         relay.cleanup()
     })
 }
@@ -88,17 +84,7 @@ async function Server(httpServer) {
         if (PURGE_INTERVAL || purgeInterval) {
             clearInterval(purgeInterval)
         }
-        clearInterval(closeUnresponsiveConns)
     })
-
-    const closeUnresponsiveConns = setInterval(function ping() {
-        server.clients.forEach(function each(ws) {
-            if (ws.isAlive === false) return ws.terminate()
-
-            ws.isAlive = false
-            ws.ping()
-        })
-    }, unresponsiveTimeout)
 
     console.warn(`CONFIG - ENV: ${process.env.NODE_ENV}, Purge Interval(seconds) ${PURGE_INTERVAL}, Unresponsive Check(seconds): ${unresponsiveTimeout / 1000}`)
     if (process.env.MONGODB_URI && process.env.MONGODB_DB) {

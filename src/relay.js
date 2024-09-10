@@ -127,7 +127,7 @@ class Relay {
         this.send(['OK', event.id, true])
 
         for (const [subId, {instance, filters}] of this._allSubscriptions.getSubscriptions()) {
-            console.info(subId, filters)
+            console.debug('Relaying new message to subs. SubId, Filters:', subId, JSON.stringify(filters, null, 2))
             if (matchFilters(filters, event)) {
                 instance.send(['EVENT', subId, event])
             }
