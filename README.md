@@ -13,6 +13,7 @@ SuperRain is a high performance NOSTR relay with a focus on simplicity and DVM (
 
 ## Installation
 1. Clone the repository
+2
 2. Set the following Env variables in either a .env file in the root directory or on the path
     * `PORT` - The port to run the server on
     * `NODE_ENV` - The environment to run the server in. We reccommend keeping this on production unless you are doing development work on the server.

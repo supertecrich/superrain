@@ -104,6 +104,6 @@ function startServer() {
             ? 'pipe ' + addr
             : 'port ' + addr.port
 
-        console.log('SuperRain NOSTR Relay listening on ' + bind + ' 🚀')
+        console.log('SuperRain NOSTR Relay listening at ' + addr.address + ' and ' + bind + ' 🚀')
     }
 }
